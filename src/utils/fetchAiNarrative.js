@@ -6,7 +6,7 @@ export async function fetchAiNarrative(payload, signal) {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
-    signal,
+    ...(signal ? { signal } : {}),
   })
 
   if (!res.ok) {

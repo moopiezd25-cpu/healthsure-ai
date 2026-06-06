@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { MEDICATION_OPTIONS, BUDGET_PRESETS } from './data/mockData'
 import { runAnalysis } from './utils/analyze'
 import { fetchAiNarrative } from './utils/fetchAiNarrative'
@@ -460,6 +460,7 @@ function App() {
   const [aiNarrative, setAiNarrative] = useState(null)
   const [aiNarrativeLoading, setAiNarrativeLoading] = useState(false)
   const [aiNarrativeRetry, setAiNarrativeRetry] = useState(0)
+  const [aiNarrativeSource, setAiNarrativeSource] = useState('fallback')
   const current = PAGES.find((p) => p.id === page) ?? PAGES[0]
   const stepIndex = PAGES.findIndex((p) => p.id === page)
 
@@ -559,39 +560,49 @@ function App() {
   )
   const displayedNarrative = aiNarrative ?? fallbackNarrative
 
-  const loadAiNarrative = useCallback(
-    (signal) => {
-      setAiNarrativeLoading(true)
-      setAiNarrative(null)
-      return fetchAiNarrative(
-        {
-          profile: analysisProfile,
-          riskLevel: analysisView.riskLevel,
-          uwStatus,
-          profileSummary,
-          sensitiveItems: displaySensitive,
-        },
-        signal,
-      )
-        .then((text) => setAiNarrative(text))
-        .catch(() => setAiNarrative(null))
-        .finally(() => setAiNarrativeLoading(false))
-    },
-    [
-      analysisProfile,
-      analysisView.riskLevel,
-      uwStatus,
-      profileSummary,
-      displaySensitive,
-    ],
-  )
-
   useEffect(() => {
     if (page !== 'analysis') return undefined
-    const ac = new AbortController()
-    loadAiNarrative(ac.signal)
-    return () => ac.abort()
-  }, [page, aiNarrativeRetry, loadAiNarrative])
+
+    let active = true
+    setAiNarrativeLoading(true)
+    setAiNarrative(null)
+    setAiNarrativeSource('fallback')
+
+    const payload = {
+      profile: analysisProfile,
+      riskLevel: analysisView.riskLevel,
+      uwStatus,
+      profileSummary,
+      sensitiveItems: displaySensitive,
+    }
+
+    fetchAiNarrative(payload)
+      .then((text) => {
+        if (!active) return
+        setAiNarrative(text)
+        setAiNarrativeSource('live')
+      })
+      .catch(() => {
+        if (!active) return
+        setAiNarrative(null)
+        setAiNarrativeSource('fallback')
+      })
+      .finally(() => {
+        if (!active) return
+        setAiNarrativeLoading(false)
+      })
+
+    return () => {
+      active = false
+    }
+  }, [
+    page,
+    aiNarrativeRetry,
+    analysisProfile,
+    uwStatus,
+    analysisView.riskLevel.level,
+    analysisView.riskLevel.label,
+  ])
 
   const advicePrimaryPath = getAdvicePrimaryPath(uwStatus)
   const adviceSummaryText = buildAdviceSummaryText(profile, uwStatus)
@@ -966,17 +977,17 @@ function App() {
                     重新生成
                   </button>
                 </div>
-                {aiNarrativeLoading ? (
-                  <p className="analysis-narrative analysis-narrative--loading">
-                    AI 正在生成个性化分析依据...
-                  </p>
-                ) : (
+                <p
+                  className={`analysis-source${aiNarrativeSource === 'live' ? ' analysis-source--live' : ''}`}
+                >
+                  {aiNarrativeLoading
+                    ? 'AI 正在生成个性化分析依据...'
+                    : aiNarrativeSource === 'live'
+                      ? 'Live AI · Gemini 生成'
+                      : 'Fallback · 本地规则生成'}
+                </p>
+                {!aiNarrativeLoading && (
                   <p className="analysis-narrative">{displayedNarrative}</p>
-                )}
-                {!aiNarrativeLoading && !aiNarrative && (
-                  <p className="analysis-fallback-hint">
-                    已使用本地模板说明（AI 服务暂不可用）
-                  </p>
                 )}
               </div>
 
