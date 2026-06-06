@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { MEDICATION_OPTIONS, BUDGET_PRESETS } from './data/mockData'
 import { runAnalysis } from './utils/analyze'
+import { fetchAiNarrative } from './utils/fetchAiNarrative'
 import './App.css'
 
 const HEALTH_STEP_LABELS = ['基础信息', '健康状况', '保障需求']
@@ -456,6 +457,9 @@ function App() {
   const [healthStep, setHealthStep] = useState(1)
   const [caseMenuOpen, setCaseMenuOpen] = useState(false)
   const [planFeedback, setPlanFeedback] = useState(null)
+  const [aiNarrative, setAiNarrative] = useState(null)
+  const [aiNarrativeLoading, setAiNarrativeLoading] = useState(false)
+  const [aiNarrativeRetry, setAiNarrativeRetry] = useState(0)
   const current = PAGES.find((p) => p.id === page) ?? PAGES[0]
   const stepIndex = PAGES.findIndex((p) => p.id === page)
 
@@ -546,14 +550,49 @@ function App() {
     Math.max(1, Math.round(analysisView.riskLevel.score / 10)),
   )
   const uwStatus = analysisView.underwriting.status
-  const displayRiskTags = buildDisplayRiskTags(profile)
-  const displaySensitive = buildSensitiveDisplay(profile)
-  const profileSummary = buildProfileSummary(profile)
-  const analysisNarrative = buildAnalysisNarrative(
-    profile,
-    analysisView.riskLevel,
-    uwStatus,
+  const displayRiskTags = useMemo(() => buildDisplayRiskTags(profile), [profile])
+  const displaySensitive = useMemo(() => buildSensitiveDisplay(profile), [profile])
+  const profileSummary = useMemo(() => buildProfileSummary(profile), [profile])
+  const fallbackNarrative = useMemo(
+    () => buildAnalysisNarrative(profile, analysisView.riskLevel, uwStatus),
+    [profile, analysisView.riskLevel, uwStatus],
   )
+  const displayedNarrative = aiNarrative ?? fallbackNarrative
+
+  const loadAiNarrative = useCallback(
+    (signal) => {
+      setAiNarrativeLoading(true)
+      setAiNarrative(null)
+      return fetchAiNarrative(
+        {
+          profile: analysisProfile,
+          riskLevel: analysisView.riskLevel,
+          uwStatus,
+          profileSummary,
+          sensitiveItems: displaySensitive,
+        },
+        signal,
+      )
+        .then((text) => setAiNarrative(text))
+        .catch(() => setAiNarrative(null))
+        .finally(() => setAiNarrativeLoading(false))
+    },
+    [
+      analysisProfile,
+      analysisView.riskLevel,
+      uwStatus,
+      profileSummary,
+      displaySensitive,
+    ],
+  )
+
+  useEffect(() => {
+    if (page !== 'analysis') return undefined
+    const ac = new AbortController()
+    loadAiNarrative(ac.signal)
+    return () => ac.abort()
+  }, [page, aiNarrativeRetry, loadAiNarrative])
+
   const advicePrimaryPath = getAdvicePrimaryPath(uwStatus)
   const adviceSummaryText = buildAdviceSummaryText(profile, uwStatus)
   const judgmentBasis = buildJudgmentBasis(profile)
@@ -916,8 +955,29 @@ function App() {
               </div>
 
               <div className="analysis-card">
-                <h3 className="analysis-card__title">AI 分析依据</h3>
-                <p className="analysis-narrative">{analysisNarrative}</p>
+                <div className="analysis-card__head-row">
+                  <h3 className="analysis-card__title">AI 分析依据</h3>
+                  <button
+                    type="button"
+                    className="analysis-retry"
+                    disabled={aiNarrativeLoading}
+                    onClick={() => setAiNarrativeRetry((n) => n + 1)}
+                  >
+                    重新生成
+                  </button>
+                </div>
+                {aiNarrativeLoading ? (
+                  <p className="analysis-narrative analysis-narrative--loading">
+                    AI 正在生成个性化分析依据...
+                  </p>
+                ) : (
+                  <p className="analysis-narrative">{displayedNarrative}</p>
+                )}
+                {!aiNarrativeLoading && !aiNarrative && (
+                  <p className="analysis-fallback-hint">
+                    已使用本地模板说明（AI 服务暂不可用）
+                  </p>
+                )}
               </div>
 
               <button

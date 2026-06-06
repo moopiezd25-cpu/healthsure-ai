@@ -751,11 +751,50 @@
   color: #6f6258;
 }
 
+.analysis-card__head-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.analysis-card__head-row .analysis-card__title {
+  margin-bottom: 0;
+}
+
+.analysis-retry {
+  flex-shrink: 0;
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #c96f3a;
+  background: #fff5ed;
+  border: 1px solid #e8c4a8;
+  border-radius: 20px;
+  cursor: pointer;
+}
+
+.analysis-retry:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .analysis-narrative {
   margin: 0;
   font-size: 14px;
   line-height: 1.75;
   color: #2b2118;
+}
+
+.analysis-narrative--loading {
+  color: #6f6258;
+}
+
+.analysis-fallback-hint {
+  margin: 10px 0 0;
+  font-size: 11px;
+  color: #6f6258;
 }
 
 .analysis-cta {
