@@ -1,0 +1,62 @@
+:root {
+  --color-primary: #0b6e7f;
+  --color-primary-dark: #0b3d4a;
+  --color-primary-light: #3db8c8;
+  --color-accent: #2dd4bf;
+  --color-accent-warm: #f4a261;
+  --color-bg: #f6f8fa;
+  --color-bg-elevated: #ffffff;
+  --color-surface: #ffffff;
+  --color-text: #0f1c21;
+  --color-text-muted: #5c6f78;
+  --color-text-soft: #8fa3ad;
+  --color-border: #e2eaee;
+  --color-border-strong: #c5d5dc;
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --shadow-sm: 0 1px 3px rgba(11, 61, 74, 0.06);
+  --shadow-md: 0 8px 24px rgba(11, 61, 74, 0.08);
+  --shadow-lg: 0 16px 40px rgba(11, 61, 74, 0.12);
+  --font-sans: 'DM Sans', 'Noto Sans SC', -apple-system, BlinkMacSystemFont,
+    'PingFang SC', sans-serif;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--color-text);
+  background: var(--color-bg);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100dvh;
+}
+
+button,
+input {
+  font-family: inherit;
+}
+
+button {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  color: var(--color-primary);
+}

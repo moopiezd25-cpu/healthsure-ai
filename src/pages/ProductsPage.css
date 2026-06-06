@@ -1,0 +1,94 @@
+.product-card {
+  padding-bottom: 14px;
+}
+
+.product-head {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.product-name {
+  font-size: 16px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  color: var(--color-text);
+}
+
+.product-premium {
+  font-size: 14px;
+  color: var(--color-primary);
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.product-coverage,
+.product-highlight {
+  font-size: 13px;
+  color: var(--color-text-muted);
+  margin: 0 0 6px;
+  line-height: 1.5;
+}
+
+.product-tags {
+  margin: 10px 0 12px;
+}
+
+.product-cta {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  border: 1px dashed var(--color-border);
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  font-size: 13px;
+  cursor: not-allowed;
+}
+
+.risk-card--warning {
+  border-left: 3px solid #e6a817;
+}
+
+.risk-card--info {
+  border-left: 3px solid var(--color-primary);
+}
+
+.risk-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.risk-head h4 {
+  flex: 1;
+  margin: 0;
+  font-size: 15px;
+}
+
+.risk-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.risk-card p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
+
+.legal-note p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--color-text-muted);
+}
