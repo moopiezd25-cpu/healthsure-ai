@@ -1,4 +1,16 @@
+/**
+ * Vercel Serverless — 环境变量（仅服务端，勿用 VITE_ 前缀）：
+ * GEMINI_API_KEY  在 Vercel Project Settings → Environment Variables 中配置
+ */
+
 const GEMINI_MODEL = 'gemini-2.0-flash'
+const GEMINI_ENV_KEY = 'GEMINI_API_KEY'
+
+function getGeminiApiKey() {
+  const value = process.env[GEMINI_ENV_KEY]
+  if (typeof value !== 'string') return ''
+  return value.trim()
+}
 
 function buildPrompt({ profile, riskLevel, uwStatus, profileSummary, sensitiveItems }) {
   const summaryText = (profileSummary || [])
@@ -45,7 +57,7 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' })
   }
 
-  const apiKey = process.env.GEMINI_API_KEY
+  const apiKey = getGeminiApiKey()
   if (!apiKey) {
     return res.status(500).json({ error: 'GEMINI_API_KEY not configured' })
   }
