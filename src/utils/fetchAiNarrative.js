@@ -1,22 +1,33 @@
 /**
  * 请求 Vercel serverless 生成 AI 分析依据（不在前端暴露 API Key）
  */
-export async function fetchAiNarrative(payload, signal) {
+export async function fetchAiNarrative(payload) {
   const res = await fetch('/api/generateAnalysis', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
-    ...(signal ? { signal } : {}),
   })
 
+  let data = {}
+  try {
+    data = await res.json()
+  } catch {
+    data = {}
+  }
+
   if (!res.ok) {
-    throw new Error(`generateAnalysis failed: ${res.status}`)
+    const err = new Error(data.error || `generateAnalysis failed: ${res.status}`)
+    err.status = data?.status ?? res.status
+    err.details = data
+    throw err
   }
 
-  const data = await res.json()
-  if (!data?.text) {
-    throw new Error('generateAnalysis returned empty text')
+  const text = data?.analysis ?? data?.text
+  if (!text) {
+    const err = new Error('generateAnalysis returned empty analysis')
+    err.status = res.status
+    throw err
   }
 
-  return data.text
+  return text
 }

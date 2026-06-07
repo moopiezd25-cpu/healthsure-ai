@@ -798,6 +798,13 @@
   color: #b85c2a;
 }
 
+.analysis-hint {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #b85c2a;
+}
+
 .analysis-cta {
   display: block;
   width: 100%;

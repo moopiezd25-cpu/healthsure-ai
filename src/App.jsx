@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo } from 'react'
 import { MEDICATION_OPTIONS, BUDGET_PRESETS } from './data/mockData'
 import { runAnalysis } from './utils/analyze'
 import { fetchAiNarrative } from './utils/fetchAiNarrative'
@@ -459,8 +459,8 @@ function App() {
   const [planFeedback, setPlanFeedback] = useState(null)
   const [aiNarrative, setAiNarrative] = useState(null)
   const [aiNarrativeLoading, setAiNarrativeLoading] = useState(false)
-  const [aiNarrativeRetry, setAiNarrativeRetry] = useState(0)
   const [aiNarrativeSource, setAiNarrativeSource] = useState('fallback')
+  const [aiNarrativeHint, setAiNarrativeHint] = useState('')
   const current = PAGES.find((p) => p.id === page) ?? PAGES[0]
   const stepIndex = PAGES.findIndex((p) => p.id === page)
 
@@ -560,49 +560,32 @@ function App() {
   )
   const displayedNarrative = aiNarrative ?? fallbackNarrative
 
-  useEffect(() => {
-    if (page !== 'analysis') return undefined
-
-    let active = true
+  const handleGenerateAiAnalysis = () => {
+    if (aiNarrativeLoading) return
     setAiNarrativeLoading(true)
-    setAiNarrative(null)
-    setAiNarrativeSource('fallback')
+    setAiNarrativeHint('')
 
-    const payload = {
+    fetchAiNarrative({
       profile: analysisProfile,
       riskLevel: analysisView.riskLevel,
       uwStatus,
       profileSummary,
       sensitiveItems: displaySensitive,
-    }
-
-    fetchAiNarrative(payload)
+    })
       .then((text) => {
-        if (!active) return
         setAiNarrative(text)
         setAiNarrativeSource('live')
+        setAiNarrativeHint('')
       })
       .catch(() => {
-        if (!active) return
         setAiNarrative(null)
         setAiNarrativeSource('fallback')
+        setAiNarrativeHint('AI 生成额度暂时受限，已展示本地规则分析')
       })
       .finally(() => {
-        if (!active) return
         setAiNarrativeLoading(false)
       })
-
-    return () => {
-      active = false
-    }
-  }, [
-    page,
-    aiNarrativeRetry,
-    analysisProfile,
-    uwStatus,
-    analysisView.riskLevel.level,
-    analysisView.riskLevel.label,
-  ])
+  }
 
   const advicePrimaryPath = getAdvicePrimaryPath(uwStatus)
   const adviceSummaryText = buildAdviceSummaryText(profile, uwStatus)
@@ -972,9 +955,9 @@ function App() {
                     type="button"
                     className="analysis-retry"
                     disabled={aiNarrativeLoading}
-                    onClick={() => setAiNarrativeRetry((n) => n + 1)}
+                    onClick={handleGenerateAiAnalysis}
                   >
-                    重新生成
+                    生成 AI 个性化分析
                   </button>
                 </div>
                 <p
@@ -986,9 +969,12 @@ function App() {
                       ? 'Live AI · Gemini 生成'
                       : 'Fallback · 本地规则生成'}
                 </p>
-                {!aiNarrativeLoading && (
-                  <p className="analysis-narrative">{displayedNarrative}</p>
+                {aiNarrativeHint && (
+                  <p className="analysis-hint">{aiNarrativeHint}</p>
                 )}
+                <p className="analysis-narrative">
+                  {aiNarrativeLoading ? fallbackNarrative : displayedNarrative}
+                </p>
               </div>
 
               <button
