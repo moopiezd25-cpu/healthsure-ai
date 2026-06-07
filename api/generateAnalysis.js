@@ -6,6 +6,16 @@ function getApiKey() {
   return typeof key === 'string' ? key.trim() : ''
 }
 
+async function parseResponseBody(response) {
+  const raw = await response.text()
+  if (!raw) return { message: 'Empty response body' }
+  try {
+    return JSON.parse(raw)
+  } catch {
+    return { rawBody: raw.slice(0, 2000) }
+  }
+}
+
 function buildPrompt(profile) {
   const age = profile.age ?? '未知'
   const health = profile.healthStatus ?? '未知'
@@ -42,36 +52,41 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Missing profile' })
     }
 
+    const prompt = buildPrompt(profile)
+    const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`
+
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS)
 
     let response
     try {
-      response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          signal: controller.signal,
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: buildPrompt(profile) }] }],
-            generationConfig: {
-              temperature: 0.5,
-              maxOutputTokens: 320,
+      response = await fetch(geminiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          contents: [
+            {
+              parts: [{ text: prompt }],
             },
-          }),
-        },
-      )
+          ],
+        }),
+      })
+    } catch (fetchErr) {
+      const msg = fetchErr instanceof Error ? fetchErr.message : String(fetchErr)
+      const details =
+        fetchErr instanceof Error && fetchErr.name === 'AbortError'
+          ? `Gemini request timed out after ${GEMINI_TIMEOUT_MS}ms`
+          : msg
+      return res.status(500).json({
+        error: 'Server error',
+        details,
+      })
     } finally {
       clearTimeout(timeoutId)
     }
 
-    let data = null
-    try {
-      data = await response.json()
-    } catch {
-      data = { parseError: 'Response was not valid JSON' }
-    }
+    const data = await parseResponseBody(response)
 
     if (!response.ok) {
       return res.status(502).json({
@@ -86,7 +101,7 @@ export default async function handler(req, res) {
       return res.status(502).json({
         error: 'Gemini API error',
         status: response.status,
-        details: data ?? { message: 'Empty response from Gemini' },
+        details: data,
       })
     }
 
