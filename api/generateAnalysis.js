@@ -1,5 +1,5 @@
-const GEMINI_MODEL = 'gemini-3.5-flash'
-const GEMINI_TIMEOUT_MS = 10_000
+const GEMINI_MODEL = 'gemini-2.0-flash'
+const GEMINI_TIMEOUT_MS = 15_000
 
 function getApiKey() {
   const key = process.env.GEMINI_API_KEY
@@ -16,17 +16,19 @@ async function parseResponseBody(response) {
   }
 }
 
-function buildPrompt(profile) {
-  const age = profile.age ?? '未知'
-  const health = profile.healthStatus ?? '未知'
-  const medication = profile.medication ?? '未知'
-  const budget = profile.budget ?? '未知'
-  const needs = Array.isArray(profile.coverageNeeds)
-    ? profile.coverageNeeds.join('、')
-    : '未知'
 
+function buildPrompt(profile) {
+  const diseases = Array.isArray(profile.diagnosedDiseases) && profile.diagnosedDiseases.length
+    ? profile.diagnosedDiseases.join('、')
+    : '无'
+  const recentMedical = profile.recentMedical ?? '未知'
+  const diseaseControl = profile.diseaseControl ?? '未知'
+  
   return `你是健康险预核保顾问。根据用户画像写一段中文分析依据（120-180字）。
-年龄${age}岁，健康${health}，用药${medication}，预算${budget}元/月，保障需求${needs}。
+年龄${profile.age ?? '未知'}岁，健康状态${profile.healthStatus ?? '未知'}，
+已确诊疾病：${diseases}，用药情况：${profile.medication ?? '未知'}，
+疾病控制：${diseaseControl}，近两年就医记录：${recentMedical}，
+预算${profile.budget ?? '未知'}元/月，保障需求：${Array.isArray(profile.coverageNeeds) ? profile.coverageNeeds.join('、') : '未知'}。
 须解释风险等级原因，提及核保敏感项，语气专业谨慎。
 禁止「保证投保」「保证理赔」「一定能买」。
 须含「AI预核保辅助建议」和「最终以保险公司核保和正式合同为准」。
